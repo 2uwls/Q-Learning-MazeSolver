@@ -34,3 +34,6 @@ The QLearning class implements the Q-Learning algorithm. Its main methods includ
 ## Visualization
 The visualization is done using the `show_solution` function in `maze_manager.py`. The function displays the maze and the discovered path. The maze is displayed using ASCII characters, and the path is displayed using colored characters.
 
+<img width="826" alt="image" src="https://github.com/2uwls/Q-Learning-MazeSolver/assets/101469780/9366fe21-866c-4fd3-9346-70e8de417a0c">
+
+
