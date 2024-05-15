@@ -1,6 +1,7 @@
 import time
 import random
 import logging
+import numpy as np
 from src.maze import Maze
 
 logging.basicConfig(level=logging.DEBUG)
@@ -216,3 +217,93 @@ class DepthFirstBacktracker(Solver):
 
         logging.debug('Class DepthFirstBacktracker leaving solve')
         return path
+
+class QLearning(Solver):
+
+    def __init__(self, maze, quiet_mode=False, neighbor_method="fancy", alpha=0.5, gamma=0.9, epsilon=0.1,
+                 episodes=100):
+        super().__init__(maze, quiet_mode, neighbor_method)
+        self.alpha = alpha
+        self.gamma = gamma
+        self.epsilon = epsilon
+        self.episodes = episodes
+        self.Q = {}
+        self.name = "Q-Learning Solver"
+        self.initialize_Q()
+        self.exploration_count = 0
+        self.exploitation_count = 0
+
+    def initialize_Q(self):
+        """Initializes the Q-values for each state-action pair to zero."""
+        actions = ['up', 'right', 'down', 'left']
+        for x in range(self.maze.num_rows):
+            for y in range(self.maze.num_cols):
+                if not self.maze.grid[x][y].walls['top'] or not self.maze.grid[x][y].walls['right'] or \
+                        not self.maze.grid[x][y].walls['bottom'] or not self.maze.grid[x][y].walls['left']:
+                    for action in actions:
+                        self.Q[((x, y), action)] = 0
+
+
+    def solve_q_Learning(self):
+        """Applies the Q-Learning algorithm to find the optimal path through the maze."""
+        actions = ['up', 'right', 'down', 'left']
+        epsilon_decay = self.epsilon / self.episodes  # Calculate decay rate
+        for episode in range(self.episodes):
+            state = self.maze.entry_coor
+            while state != self.maze.exit_coor:
+                if random.random() < self.epsilon:
+                    action = random.choice(actions)  # Exploration: choose a random action
+                    self.exploration_count += 1
+                else:
+                    action = max(actions, key=lambda a: self.Q[(state, a)]) # Exploitation: choose the best action
+                    self.exploitation_count += 1
+
+                next_state = self.get_next_state(state, action)
+                reward = self.get_reward(state, next_state)
+                future_rewards = [self.Q[(next_state, a)] for a in actions]
+                self.Q[(state, action)] += self.alpha * (
+                            reward + self.gamma * max(future_rewards) - self.Q[(state, action)])
+                state = next_state
+            print(f"Exploration count: {self.exploration_count}")
+            print(f"Exploitation count: {self.exploitation_count}")
+
+            self.epsilon = max(0.1, self.epsilon - epsilon_decay)
+
+        return self.q_learning_path()
+
+    def q_learning_path(self):
+        """Retrieves the path from the start to the goal based on the learned Q-values."""
+        path = []
+        state = self.maze.entry_coor
+        path.append((state, False))
+        while state != self.maze.exit_coor:
+            action = max(['up', 'right', 'down', 'left'], key=lambda a: self.Q[(state, a)])
+            next_state = self.get_next_state(state, action)
+            path.append((next_state, False))
+            state = next_state
+        return path
+
+    def get_reward(self, current, next):
+        """Calculates the reward for moving from the current to the next state."""
+        if next == self.maze.exit_coor:
+            return 100
+        elif self.maze.grid[next[0]][next[1]].is_walls_between(self.maze.grid[current[0]][current[1]]):
+            return -1
+        else:
+            return -0.1
+
+
+    def get_next_state(self, current, action):
+        """Calculates the next state from current state and action considering the walls."""
+        x, y = current
+        if action == 'up' and x > 0 and not self.maze.grid[x][y].is_walls_between(self.maze.grid[x-1][y]):
+            return (x-1, y)
+        elif action == 'right' and y < self.maze.num_cols - 1 and not self.maze.grid[x][y].is_walls_between(self.maze.grid[x][y+1]):
+            return (x, y+1)
+        elif action == 'down' and x < self.maze.num_rows - 1 and not self.maze.grid[x][y].is_walls_between(self.maze.grid[x+1][y]):
+            return (x+1, y)
+        elif action == 'left' and y > 0 and not self.maze.grid[x][y].is_walls_between(self.maze.grid[x][y-1]):
+            return (x, y-1)
+        return current  # If no valid move due to walls, stay in the current position
+
+

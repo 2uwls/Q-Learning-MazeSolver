@@ -3,6 +3,7 @@ from src.maze_viz import Visualizer
 from src.solver import DepthFirstBacktracker
 from src.solver import BiDirectional
 from src.solver import BreadthFirst
+from src.solver import QLearning
 
 
 class MazeManager(object):
@@ -19,32 +20,40 @@ class MazeManager(object):
         self.mazes = []
         self.media_name = ""
         self.quiet_mode = False
+        self.next_id = 0
+        self.cell_size = 1  # Assuming a default cell size; adjust as needed
 
-    def add_maze(self, row, col, id=0):
-        """Add a maze to the manager. We give the maze an index of
-        the total number of mazes in the manager. As long as we don't
-        add functionality to delete mazes from the manager, the ids will
-        always be unique. Note that the id will always be greater than 0 because
-        we add 1 to the length of self.mazes, which is set after the id assignment
+    def add_maze(self, num_rows, num_cols):
+        maze = Maze(num_rows, num_cols, self.next_id)
+        self.mazes.append(maze)
+        self.next_id += 1
+        return maze
 
-        Args:
-            row (int): The height of the maze
-            col (int): The width of the maze
-            id (int):  The optional unique id of the maze.
-
-        Returns
-            Maze: The newly created maze
-        """
-
-        if id is not 0:
-            self.mazes.append(Maze(row, col, id))
-        else:
-            if len(self.mazes) < 1:
-                self.mazes.append(Maze(row, col, 0))
-            else:
-                self.mazes.append(Maze(row, col, len(self.mazes) + 1))
-
-        return self.mazes[-1]
+    # def add_maze(self, row, col, id=0):
+    #     """Add a maze to the manager. We give the maze an index of
+    #     the total number of mazes in the manager. As long as we don't
+    #     add functionality to delete mazes from the manager, the ids will
+    #     always be unique. Note that the id will always be greater than 0 because
+    #     we add 1 to the length of self.mazes, which is set after the id assignment
+    #
+    #     Args:
+    #         row (int): The height of the maze
+    #         col (int): The width of the maze
+    #         id (int):  The optional unique id of the maze.
+    #
+    #     Returns
+    #         Maze: The newly created maze
+    #     """
+    #
+    #     if id is not 0:
+    #         self.mazes.append(Maze(row, col, id))
+    #     else:
+    #         if len(self.mazes) < 1:
+    #             self.mazes.append(Maze(row, col, 0))
+    #         else:
+    #             self.mazes.append(Maze(row, col, len(self.mazes) + 1))
+    #
+    #     return self.mazes[-1]
 
     def add_existing_maze(self, maze, override=True):
         """Add an already existing maze to the manager.
@@ -126,6 +135,9 @@ class MazeManager(object):
         elif method == "BreadthFirst":
             solver = BreadthFirst(maze, neighbor_method, self.quiet_mode)
             maze.solution_path = solver.solve()
+        #elif method == "Q-Learning":
+         #   solver = QLearning(maze, quiet_mode=False, neighbor_method="fancy", alpha=0.5, gamma=0.9, epsilon=0.1, episodes=1000)
+           # maze.solution_path = solver.solve()
 
     def show_maze(self, id, cell_size=1):
         """Just show the generation animation and maze"""
